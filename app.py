@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import openai
@@ -17,7 +16,7 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "lumina-voice-ai.json"
 tts_client = texttospeech.TextToSpeechClient()
 
 MEMORY_FILE = "memory.json"
-user_sessions = {}  # Session tracking for tier logic
+user_sessions = {}
 
 def load_memory():
     try:
@@ -79,17 +78,14 @@ def ask():
     memory = update_timeline_from_text(question, memory)
     save_memory(memory)
 
-    # Check if user is in funnel mode already
     steps = user_sessions.get(session_id, {"step": 0, "answers": []})
 
-    # Start funnel logic if triggered
     if steps["step"] == 0 and detect_funnel_trigger(question):
         response = "Do you already have a business, or are you just getting started?"
         steps["step"] += 1
         user_sessions[session_id] = steps
         return jsonify({"reply": response})
 
-    # Continue funnel steps
     if steps["step"] > 0:
         steps["answers"].append(question)
         if steps["step"] == 1:
@@ -110,7 +106,6 @@ def ask():
         user_sessions[session_id] = steps
         return jsonify({"reply": response})
 
-    # Otherwise: Default GPT-4 Smart Answer
     try:
         conversation = [
             {"role": "system", "content": "You are Lumina, a soulful AI guide that adapts to the user's evolving journey."},
@@ -131,6 +126,8 @@ def speak():
     text = data.get("text", "")
     if not text:
         return jsonify({"audio": ""})
+
+    text = text.replace("*", "")
 
     try:
         synthesis_input = texttospeech.SynthesisInput(text=text)
@@ -201,4 +198,3 @@ def save_lead():
 
 if __name__ == "__main__":
     app.run(debug=True)
-    
